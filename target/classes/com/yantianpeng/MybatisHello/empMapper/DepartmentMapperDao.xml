@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yantianpeng.MybatisHello.dao.DepartmentMapperDao">
+    <!--
+        根据id查询部门
+    -->
+    <select id="getDepById" resultType="com.yantianpeng.MybatisHello.entity.Department">
+        select t1D.id as id,t1D.departmentName as departmentName from tab1_Department t1D
+        where  t1D.id =#{id}
+    </select>
+    <!--
+
+
+    -->
+    <resultMap id="MyDep" type="com.yantianpeng.MybatisHello.entity.Department">
+        <id column="id" property="id"/>
+        <result column="departmentName" property="departmentName"/>
+       <!--
+            collection:定义关联集合类型的属性的封装规则。
+            ofType：指定集合里面元素的类型
+       -->
+        <collection property="employees" ofType="com.yantianpeng.MybatisHello.entity.Employee">
+        <!--
+            定义集合中元素的封装规则
+        -->
+            <id column="eid" property="id"/>
+            <result column="email" property="email"/>
+            <result column="gender" property="gender"/>
+            <result column="name" property="name"/>
+        </collection>
+    </resultMap>
+    <select id="getDepByIdPlus" resultMap="MyDep">
+select t1D.id as id,
+       t1D.departmentName as departmentName,
+       t1e.id as eid,
+       t1e.email as email,
+       t1e.gender as gender,
+       t1e.last_name as  name
+from tab1_Department t1D
+left join tab1_employee t1e
+on t1D.id =t1e.d_id where t1D.id=#{id}
+    </select>
+
+
+
+    <select id="getDepByIdStep" resultMap="MyDepStep" >
+        select t1D.id as id,
+       t1D.departmentName as departmentName
+from tab1_Department t1D where  t1D.id =#{id}
+    </select>
+
+    <resultMap id="MyDepStep" type="com.yantianpeng.MybatisHello.entity.Department">
+        <id column="id" property="id"/>
+        <result column="departmentName" property="departmentName"/>
+        <collection property="employees" select="com.yantianpeng.MybatisHello.dao.EmployeeMapperResultMapDao.getEmpsByDepId"
+        column="id">
+        </collection>
+    </resultMap>
+
+</mapper>

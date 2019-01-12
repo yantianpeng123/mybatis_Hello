@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yantianpeng.MybatisHello.dao.EmployeeMapperDao">
+    <!--
+        namespace:命名空间 指定接口的全类名
+        id:唯一表示 指定接口中方法名
+        resultType:返回值类型
+        #{id}: 表示从传递过来的参数取值。
+        注意事项：需要在mybatis-config配置文件中注册改XML文件
+   -->
+    <select id="getemployeeById" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+       select id,last_name as name , gender,email from tab1_employee where id = #{id}
+    </select>
+
+    <!--
+    添加一个员工
+
+    mysql指出自增主键，自增主键值的获取mybatis也是利用statment.getGenreatedKeys():
+    useGeneratedKeys = "true" 使用自增主键策略
+    keyProperty = "id": 指定对应的主键属性。也就是mybatis获取到主键以后，封装给对应的JavaBean的指定的属性。
+    -->
+    <insert id="addEmp" parameterType="com.yantianpeng.MybatisHello.entity.Employee">
+        insert into tab1_employee (id,last_name,gender,email)
+        values (#{id},#{name},#{gender},#{email})
+    </insert>
+    <!--
+    根据员工编号更新员工信息
+    -->
+    <update id="updateemp">
+        update tab1_employee
+        set last_name = #{name},
+        gender =#{gender},
+        email =#{email}
+        where id =#{id}
+    </update>
+    <!--
+        根据员工编号删除员工
+    -->
+    <delete id="delEmp">
+         delete from tab1_employee where id = #{id}
+    </delete>
+    <!--
+        添加员工并返回该员工的编号
+          useGeneratedKeys="true" :使用自增主键获取主键策略。
+          keyProperty="id"：指定对应的主键属性，也就是mybatis获取到主键之后，将这个值封装给JavaBean的的那个属性。
+          可以获取自增主键 返回给方法。
+    -->
+    <insert id="addEmpAndGetId" parameterType="com.yantianpeng.MybatisHello.entity.Employee"
+            useGeneratedKeys="true" keyProperty="id">
+        insert  into tab1_employee (id,last_name,gender,email)
+        values (#{id},#{name},#{gender},#{email})
+    </insert>
+    <!--
+        oracle中不支持自增主键，Oracle使用序列来模拟自增，每次插入的数据的主键都是从序列里面获取的。
+        selectKey:需要自增的主键 order =  after / before 表示在sql语句执行之前开始执行还是在sql语句执行之后开始执行。
+        resultType:表示查出来的数据的返回值。
+
+        Before：运行顺序：
+            先运行查询序列的（主键id）的sql，查出来的ID封装给JavaBean对应的属性值。
+            在运行插入的sql。就可以取出来id属性的对应值。
+         After：运行顺序：(会存在一些问题)
+            先运行插入sql的语句，（从序列中取出值作为id）
+            在运行selecKey查询的SQL语句。
+    -->
+    <!--<insert id="addEmpOrcl" parameterType="com.yantianpeng.MybatisHello.entity.Employee">-->
+      <!--<selectKey keyProperty="id" order="BEFORE" resultType="Integer">-->
+          <!--&lt;!&ndash;  编写查询主键的sql  keyProperty 指定主键标示&ndash;&gt;-->
+         <!--select employee_SEQ.nextval from dual-->
+       <!--</selectKey>-->
+         <!--insert  into tab1_employee (id,last_name,gender,email)-->
+         <!--values (#{id},#{name},#{gender},#{email})-->
+     <!--</insert>-->
+    <!--
+            根据ID和Name查询用户信息
+    -->
+    <select id="getEmployeeByNameAndId" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select id,last_name as name , gender,email from tab1_employee where id = #{param1} and last_name =#{param2}
+    </select>
+<!--
+    根据id和name查询用户
+    使用@Parma
+-->
+    <select id="getEmployeeByIdAndName" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select id,last_name as name , gender,email from tab1_employee
+         where id = #{id} and last_name =#{name}
+    </select>
+
+    <select id="getemployeeByMap" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select id,last_name as name , gender,email from tab1_employee
+         where id = #{id} and last_name =#{name}
+    </select>
+<!--
+    #{}和${} 的区别：
+
+-->
+    <select id="getemployeeByIdAndName" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select id,last_name as name , gender,email from tab1_employee
+         where id = ${id}
+          and last_name =#{name}
+    </select>
+<!--
+    使用$动态生成表名
+-->
+    <select id="getEmployeeActivity" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select * from ${tableName} where id =${id} and last_name =#{name}
+    </select>
+    <!--
+        根据名字返回多个对象和实体
+
+        resultType:返回实体的实体。不是List
+    -->
+        <select id="getListEmpByName" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+            select id ,last_name as name ,gender email from tab1_employee where last_name = #{name}
+        </select>
+    <!--
+        返回值是Map的封装方式
+    -->
+        <select id="getMapEmpById" resultType="map">
+            select id ,last_name as name ,gender email  from tab1_employee where  id=#{id};
+        </select>
+<!--
+
+    返回值是map封装多个对象
+-->
+    <select id="getMapEmployeeByList" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select id ,last_name as name ,gender email  from tab1_employee where  last_name=#{name};
+    </select>
+    <!--
+        使用name作为map中的key值返回
+    -->
+    <select id="getMapEmployeeBylistName" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select id ,last_name as name ,gender email  from tab1_employee
+    </select>
+ </mapper>

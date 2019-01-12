@@ -1447,3 +1447,273 @@ select employee_SEQ,nextval,last_nanme,email,d_id from
     select #{item.name} last_name,#{item.email} email ,#{item.d_id} from dual
 </foreach>
 ```
+
++ Mybatis两个内置参数，
+
+  - 不只是方法传递过来的参数，取值。。。	
+
+  - Mybatis默认还有两个内置参数，
+
+    - _parameter:代表整个参数
+      - 单个参数_parameter就是这个参数。
+      - 多个参数：参数会被封装成一个map,_parameter 就是代表这个map
+    - 关键性sql：当传过来的参数不是null时,对_parameter进行判断，判断不是null时,才去执行下面的内容。
+
+    ```
+    <select id="testDatabaseId" resultType="com.yantianpeng.Dynamic.entity.Employee">
+          <if test="_databaseId=='mysql'">
+              select * from mysqlTable;
+              <if test="_parammeter!=null">
+                      last_name = #{_parameter.name}
+              </if>
+          </if>
+    
+        <if test="_databaseId=='oracle'">
+            select * from oracleTable
+        </if>
+    </select>
+    ```
+
+
+
+    - databaseId:
+      - 如果配置了databaseId标签，
+      - _databaseId就是代表当前数据库的别名。
+
+
+
+关键性sql：
+
+当在全局变量里买呢配置了databaseId的时候
+
+_databaseId ='mysql'时会执行第一句。
+
+_databaseId ='oracle'时会执行第二句。
+
+```
+<select id="testDatabaseId" resultType="com.yantianpeng.Dynamic.entity.Employee">
+      <if test="_databaseId=='mysql'">
+          select * from mysqlTable;
+      </if>
+
+    <if test="_databaseId=='oracle'">
+        select * from oracleTable
+    </if>
+</select>
+```
+
++ bind动态绑定：
+
+  + 可以经OGNL表达式的值绑定到一个变量中，方便后来引用这个变量的值。
+
+  关键性sql：
+
+  <bind>动态绑定 可以灵活的运行
+
+  ```
+  <select id="testDatabaseId" resultType="com.yantianpeng.Dynamic.entity.Employee">
+      <bind name="_lastName" value="'%'+name+'%'"></bind>
+        <if test="_databaseId=='mysql'">
+            select * from mysqlTable;
+            <if test="_parammeter!=null">
+                    last_name = #{_lastName}
+            </if>
+        </if>
+  
+      <if test="_databaseId=='oracle'">
+          select * from oracleTable
+      </if>
+  </select>
+  ```
+
++ sql标签：
+
+  + 抽取可以重用的sql标签，经常有在查询保存的时候可以吧重复的 东西抽取出来做个处理。
+  + 使用sql标签做抽取。
+  + 使用include标签做引用,还可以自定义一些property，sql标签内部就可以使用自定义的属性，include-property 取值的正确方式，$(prop),不能使用#{}
+  + 在这两个标签里面可以使用常用的标签if choose when case 等一些常用的标签。
+
+  关键性sql：
+
+  ```
+      <sql id="insertSql">
+          last_name,gender,email,d_id
+      </sql>
+  <insert id="insertSqlww">
+      <include refid="insertSql"></include>
+  </insert>
+  ```
+
+****
+
+### Mybatis—缓存机制
+
+1. Mybatis包含一个非常强大的查询缓存特性，他可以非常方便的配置和定制，缓存可以极大的提升查询效率。
+
+2. Mybatis 系统中默认定义了两级缓存。
+
+   一级缓存和二级缓存。
+
+   1. 默认情况下只有一级缓存（SqlSession级别的缓存,也称作本地缓存.）开启。
+
+   2. 二级缓存需要手动开启和配置，他是基于namespace级别的缓存
+
+   3. 为了提高扩展性，Mybatis定义了缓存接口Cache。我们可以通过实现Cache接口来自定义二级缓存。
+
+   4. 一级缓存失效情况：没有使用到当前的一级缓存,效果就是，还需要在向数据库发出查询。
+
+      a. sqlSession不相同，
+
+      b.sqlSession相同，查询条件不同,(当前一级缓存中还没有这个数据)
+
+      c. sqlSession相同，两次查询之间执行了增删改操作，(这次操作增删改可能对当前数据库有影响),会进行再次 查询。
+
+      d. sqlSession相同，手动清除了一级缓存。
+
+   + 二级缓存（全局缓存
+
+     + 基于namespace级别的缓存，一个namespace对应一个二级缓存。
+
+     + 工作机制：
+
+       + 1.一个会话查询一条数据，这个数据就会被放在当前会话的一级缓存中，如果会话被关闭，一级缓存里面的数据会被保存到二级缓存中， 就可以参照二级缓存里面的内容。
+       + 不同的namespace查出来的数据会放在自己对应的缓存中。
+
+     + 使用步骤：
+
+       + 1.开启全局二级缓存配置，
+
+       + ```
+         <!--
+             开启全局默认缓存
+             设置为false时,关闭二级缓存并不会关闭一级缓存。
+         -->
+         <setting name="cacheEnabled" value="true"/>
+         ```
+
+       + 去mapper.xml 配置使用二级缓存
+
+       + 注意:POJO需要实现Serializable接口 
+
+         ```
+             <!--
+                 默认开启二级缓存
+                 eviction：缓存的回收策略
+                      LRU – 最近最少使用的:移除最长时间不被使用的对象。
+                      FIFO – 先进先出:按对象进入缓存的顺序来移除它们。
+                      SOFT – 软引用:移除基于垃圾回收器状态和软引用规则的对象。
+                      WEAK – 弱引用:更积极地移除基于垃圾收集器状态和弱引用规则的对象。
+                      默认的是 LRU。
+                 type：自定义的缓存的全类名：该类需要实现Cache接口
+         
+                 blocking=""
+                 flushInterval：缓存刷新间隔 默认是不清空缓存但是毫秒
+                 readOnly：只读 设置为ture：Mybatis认为所有从缓存中获取的数据的操作都是只读操作，不会修改数据，Mybatis为了加快获取速度，
+                                           直接就会将数据再缓存中引用的交给用户，这样操作是不安全的，但是速度是较快。
+                              设置为false；Mybatis认为获取的数据可能会被修改，Mybatis会利用序列化和反序列化技术克隆一份新的数据
+                                          这样是安全的 但是速度是最慢的。
+                 size：缓存多少元素。
+             -->
+         cache></cache>
+         ```
+
++ 和缓存有关的设置/属性：
+  + 每个select标签都有一个 useCache ="true"
+    + 设置为false：不使用缓存,(一级缓存依然在使用,二级缓存不使用.)
+  + 每个增删改标签：flushCache=‘true’:表示清楚缓存,增删改执行完成后就会清楚缓存。flushCache=“true” 会清除一级缓存和二级缓存.
+  + -  查询 标签：flushCache =" false" 如果flushCache="false",每次查询完成都会清空缓存，缓存是没有被使用的。
+  + sqlSession.clearCache():  只是用来清除当前session一级缓存的。
+  + localCacheScope:本地缓存作用域,(一级缓存Session)：当前会话的所有数据将被清除。STATEMENT：可以禁用一级缓存。
++ 缓存的使用顺序：
+  - 先使用二级缓存，在使用一级缓存。
+
+****
+
+Mybatis整合EhcacheCache：
+
+​	1. 添加pom文件：​	
+
+```
+<!-- https://mvnrepository.com/artifact/net.sf.ehcache/ehcache -->
+<dependency>
+    <groupId>net.sf.ehcache</groupId>
+    <artifactId>ehcache</artifactId>
+    <version>2.10.6</version>
+</dependency>
+```
+
+```
+<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-log4j12 -->
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-log4j12</artifactId>
+    <version>1.7.25</version>
+    <scope>test</scope>
+</dependency>
+<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
+<dependency>
+    <groupId>org.slf4j</groupId>
+    <artifactId>slf4j-api</artifactId>
+    <version>1.7.25</version>
+</dependency>
+```
+
+```
+<!-- https://mvnrepository.com/artifact/org.mybatis.caches/mybatis-ehcache -->
+<dependency>
+    <groupId>org.mybatis.caches</groupId>
+    <artifactId>mybatis-ehcache</artifactId>
+    <version>1.1.0</version>
+</dependency>
+
+```
+
+​	2.在mapper.xml文件中配置<cache>
+
+```
+ <!--
+配置Ehcache 缓存
+ -->
+<cache type="org.mybatis.caches.ehcache.EhcacheCache">
+
+</cache>
+```
+
+3. 引入ehcache.xml文件 设置相关属性
+
+   ```
+   <?xml version="1.0" encoding="UTF-8" ?>
+   <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="../config/ehcache.xsd">
+       <!--
+       diskStore path:缓存默认存储路径 磁盘保存路径
+       maxElementsInMemory:内存中最大缓存对象数.
+       maxElementsOnDisk：磁盘中最大缓存对象数，若是0表示无穷大.
+       eternal：Element是否永久有效，一但设置了，timeout将不起作用.
+       overflowToDisk：配置此属性，当内存中Element数量达到maxElementsInMemory时，Ehcache将会Element写到磁盘中
+       timeToIdleSeconds：设置Element在失效前的允许闲置时间。仅当element不是永久有效时使用，可选属性，默认值是0， 也就是可闲置时间无穷大
+       timeToLiveSeconds：设置Element在失效前允许存活时间。最大时间介于创建时间和失效时间之间。仅当element不是永久有效时使用，
+       默认是0.也就是element存活时间无穷大.
+       diskPersistent：是否缓存虚拟机重启期数据。（这个虚拟机是指什么虚拟机一直没看明白是什么,有高人还希望能指点一二）
+       diskExpiryThreadIntervalSeconds：磁盘失效线程运行时间间隔，默认是120秒。
+       diskSpoolBufferSizeMB：这个参数设置DiskStore（磁盘缓存）的缓存区大小。默认是30MB。每个Cache都应该有自己的一个缓冲区.
+       -->
+       <diskStore path="/Users/yantianpeng/Desktop/IdeaProjects/mybatis_Hello/src/main/resources"/>
+       <defaultCache maxElementsInMemory="10000"
+                     eternal="false"
+                     timeToIdleSeconds="120"
+                     timeToLiveSeconds="120"
+                     overflowToDisk="true"
+                     maxElementsOnDisk="10000000"
+                     diskPersistent="false"
+                     diskExpiryThreadIntervalSeconds="120"
+                     memoryStoreEvictionPolicy="LRU" />
+   </ehcache>
+   ```
+
+****
+
+#### Mybatis+Spring+SpringMvc整合：
+
+
+

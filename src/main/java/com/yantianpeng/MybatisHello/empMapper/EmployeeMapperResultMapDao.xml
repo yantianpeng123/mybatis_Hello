@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:给接口绑定 使用接口的全类名
+-->
+<mapper namespace="com.yantianpeng.MybatisHello.dao.EmployeeMapperResultMapDao">
+    <!--
+        测试resultMap的用法
+    -->
+    <select id="getEmpById" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+        select id ,last_name as name ,gender ,email from tab1_employee
+         where id = #{id}
+    </select>
+    <!--
+        测试resultMap方法2
+    -->
+    <select id="getEmpByIdRresultMap" resultMap="Myempfirst">
+        select id ,last_name as name ,gender ,email from tab1_employee
+             where id = #{id}
+    </select>
+
+        <select id="getEmpByIdResultMap2" resultMap="MyDepEmp">
+     select t1e.id as id,t1e.gender as gender ,t1e.email as email,
+           t1e.last_name,t1D.departmentName from tab1_employee t1e  left join tab1_Department t1D
+        on t1e.d_id = t1D.id  where t1e.id =#{id}
+        </select>
+<!--
+    联合查询：级连属性封装结果集
+      <result column="departmentName" property="department.departmentName"/>
+
+-->
+<resultMap id="MyDepEmp" type="com.yantianpeng.MybatisHello.entity.Employee">
+    <id column="id" property="id"/>
+    <result column="gender" property="gender"/>
+    <result column="email" property="email"/>
+    <result column="last_name" property="name"/>
+    <result column="departmentName" property="department.departmentName"/>
+</resultMap>
+
+
+
+        <!--
+            自定义某个JavaBean的封装规则
+            type：自定义规则的Java
+            id：唯一id方便引用
+        -->
+        <resultMap id="Myempfirst" type="com.yantianpeng.MybatisHello.entity.Employee">
+                    <!--
+                        指定主键ID
+                        column ： 指定具体的那一列
+                        property： 指定对应JavaBean属性
+                    -->
+                     <id column="id" property="id"></id>
+            <!--定义普通类的封装规则-->
+                    <result column="last_name" property="name"/>
+            <!--其他不指定的列会自动封装，我们只要写resultMap就把全部的映射规则都写上。-->
+                    <result column="gender" property="gender" />
+                    <result column="email" property="email"/>
+        </resultMap>
+    <!--
+        使用association 联合查询
+    -->
+    <select id="getEmpByIdResultMap3" resultMap="mydifEmp2">
+      select t1e.id as id,t1e.gender as gender ,t1e.email as email,
+       t1e.last_name,t1D.departmentName from tab1_employee t1e  left join tab1_Department t1D
+    on t1e.d_id = t1D.id  where t1e.id =#{id}
+    </select>
+    <resultMap id="mydifEmp2" type="com.yantianpeng.MybatisHello.entity.Employee">
+        <id column="id" property="id"/>
+        <result column="gender" property="gender"/>
+        <result column="last_name" property="name"/>
+        <result column="email" property="email"/>
+        <!--
+            association:可以指定联合JavaBean对象。
+            property：指定那个是属性是联合的对象。
+            JavaType: 指定这个对象的类型。 不可以省的掉
+        -->
+        <association property="department" javaType="com.yantianpeng.MybatisHello.entity.Department">
+            <result column="departmentName" property="departmentName"/>
+        </association>
+    </resultMap>
+<!--
+    association：实现分步查询；先查询出员工的d_id 再根据d_id查询该员工的所在的部门
+-->
+    <select id="getEmpBystep" resultMap="MyEmp">
+        select * from tab1_employee where id = #{id}
+    </select>
+    <resultMap id="MyEmp" type="com.yantianpeng.MybatisHello.entity.Employee">
+        <id column="id" property="id"/>
+        <result column="last_name" property="name"/>
+        <result column="gender" property="gender"/>
+        <result column="email" property="email"/>
+        <!--
+            select ：
+            表明当前属性是调用select指定的方法查出的结果。
+            column:指定将那一列的值传给这个方法。
+            流程：使用select指定的方法(传入column指定d_id) 查出对象
+            并封装给property 指定的值
+        -->
+        <association property="department" select="com.yantianpeng.MybatisHello.dao.DepartmentMapperDao.getDepById"
+        column="d_id"/>
+    </resultMap>
+<!--
+    根据部门id查询员工信息
+-->
+    <select id="getEmpsByDepId" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+          select t1e.id as id ,t1e.last_name as name ,t1e.gender as gender ,t1e.email as email from tab1_employee t1e
+          where t1e.d_id =#{id}
+    </select>
+
+    <!--
+        getEmpByIdStepDis 鉴别器的使用和分步查询的复习。
+        1。先根据员工编号查询员工信息
+        2。再根据要求是否查询部门信息
+                部门id是3的查询查询出来部门，其他的不需要查询出来部门
+    -->
+    <select id="getEmpByIdStepDis" resultMap="MyEmpList">
+        select * from tab1_employee where d_id=#{id}
+    </select>
+<!--
+
+-->
+<resultMap id="MyEmpList" type="com.yantianpeng.MybatisHello.entity.Employee">
+    <id column="id" property="id"/>
+    <result column="last_name" property="name"/>
+    <result column="gender" property="gender"/>
+    <result column="email" property="email"/>
+    <result column="d_id" property="d_id"/>
+    <!--
+        discriminator:
+            column:指定判断的列名
+            javaType：列值对应的Java类型
+    -->
+    <discriminator javaType="Integer" column="d_id">
+        <case value="4" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+            <association property="department" select="com.yantianpeng.MybatisHello.dao.DepartmentMapperDao.getDepById"
+                         column="d_id"/>
+        </case>
+    </discriminator>
+</resultMap>
+
+</mapper>

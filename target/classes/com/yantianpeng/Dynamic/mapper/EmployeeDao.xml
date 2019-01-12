@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:指定接口的全类名
+-->
+<mapper namespace="com.yantianpeng.Dynamic.Dao.EmployeeDao">
+    <!--
+        if
+        cjoose
+        trim
+        foreach
+    -->
+    <!--
+        测试if语句的使用。
+        ognl 表达式 判断改元素是不是空值 是空值的话 不需要取值里面的元素 不是空值的话 拼接上sql
+    <if test="">
+    </if>
+    -->
+    <select id="getEmpByIdList" resultType="com.yantianpeng.Dynamic.entity.Employee">
+        select * from tab1_employee
+        where  1 = 1
+        <if test="id!=null">
+         and id= #{id}
+        </if>
+        <if test="name!=null &amp;&amp; name!=&quot;&quot;">
+            and last_name = #{name}
+        </if>
+        <if test="email!=null &amp;&amp; email.trim()!=&quot;&quot;">
+            and email = #{email}
+        </if>
+        <if test="d_id==1 or d_id = 3">
+            and d_id = #{d_id}
+        </if>
+    </select>
+
+    <!--
+        测试where标签解决一些sql带上and的语句
+    -->
+    <select id="getEmpByWhere" resultType="com.yantianpeng.Dynamic.entity.Employee">
+        select * from tab1_employee
+        <where>
+            <if test="id!=null">
+                and id=#{id}
+            </if>
+            <if test="name!=null &amp;&amp; name!=&quot;&quot;">
+               and  last_name =#{name}
+            </if>
+            <if test="email!=null &amp;&amp; email.trim()!=&quot;&quot;">
+              and  email = #{email}
+            </if>
+        </where>
+    </select>
+        <!--
+            使用trim标签解决么某一些sql语句拼接在后面的情况
+            prefix="":前缀trim标签体中使整个字符串后的结果，prefix给拼成的字符串加上一个前缀，
+            suffix=""：后缀 给拼成的字符串加上一个后缀
+            prefixOverrides=""前缀覆盖，标签题里面的整个字符串去掉多余的字符
+            suffixOverrides=""后缀覆盖，去掉整个字符串后面多余的字符串
+        -->
+    <select id="getEmpByContionTrim" resultType="com.yantianpeng.Dynamic.entity.Employee">
+      select * from tab1_employee
+      <trim prefix="where" suffixOverrides="and">
+          <if test="id!=null">
+               id=#{id} and
+          </if>
+          <if test="name!=null &amp;&amp; name!=&quot;&quot;">
+                last_name =#{name}
+          </if>
+          <if test="email!=null &amp;&amp; email.trim()!=&quot;&quot;">
+                email = #{email} and
+          </if>
+      </trim>
+    </select>
+<!--
+    使用choose选择查询
+    如果带有id使用id查询
+    如果带有name使用那么查询
+
+    choose用在单选择的结构中  只能从以上的条件中选择一个
+-->
+    <select id="getEmpByChoose" resultType="com.yantianpeng.Dynamic.entity.Employee">
+        select * from tab1_employee
+        <where>
+          <choose>
+              <when test="id!=null">
+                  id = #{id}
+              </when>
+              <when test="name!=null &amp;&amp; name!=&quot;&quot;">
+                  last_name = #{name}
+              </when>
+              <when test="email!=null &amp;&amp; eamil!=&quot;&quot;">
+                  email  = #{email}
+              </when>
+              <otherwise>
+                  1 = 1
+              </otherwise>
+          </choose>
+        </where>
+    </select>
+
+
+<!--
+    根据id更新对象
+  -->
+    <update id="updateEmpById" >
+        update tab1_employee set
+        <if test="id!=null">
+            id = #{id}
+        </if>
+        <if test="name!=null &amp;&amp; name!=&quot;&quot;">
+            ,last_name =#{name}
+        </if>
+        <if test="email!=null &amp;&amp; email!=&quot;&quot;">
+            ,email =#{email}
+        </if>
+        where id=#{id}
+    </update>
+
+<!--
+    使用trim标签更新元素
+    prefix:表示在整个的trim标签题添加一个元素
+    prefixOverrides；标签最前面里面的整个字符串去掉多余的字符
+    suffix：表示在整个trim的体后面添加一个元素
+    suffixOverrides：表示在标签最后面的的整个字符串去掉多余的字符
+-->
+    <update id="updateEmpByIdTrim" >
+       update tab1_employee
+       <trim prefix="set" suffixOverrides=",">
+           <if test="id!=null">
+               id = #{id},
+           </if>
+           <if test="name!=null &amp;&amp; name!=&quot;&quot;">
+               last_name =#{name},
+           </if>
+           <if test="email!=null &amp;&amp; email!=&quot;&quot;">
+               email =#{email},
+           </if>
+       </trim>
+        where id=#{id}
+    </update>
+
+    <!--
+        根据id批量查询employee
+        select* from tab1_employee where id in(1,2,3);
+    collection： 指定要遍历的集合，
+            list类型的参数会特殊处理封装在mao里面，map的key就叫做list
+            item：将当前遍历出来的元素赋值给指定的元素。
+            separator：每个元素之间的分割符
+            open：遍历所有结果最开始的一个拼接符号
+            close：遍历所有结果最后面的一个结束字符
+            index：索引，遍历list时index就是索引，item就是当前值，
+                       遍历Map时index表示的就是map的key，item就是map的值
+
+    -->
+    <select id="getEmpByForeach" resultType="com.yantianpeng.Dynamic.entity.Employee">
+        select* from tab1_employee where id in
+      <foreach collection="list" open="(" close=")" item="item" separator=",">
+         #{item}
+      </foreach>
+    </select>
+
+    <!--在mysql环境下面
+        批量保存员工在mysql环境中
+        insert into tab1_employee (last_name,gender,email,d_id)
+values ('习近平','男','xijinping@163.com',5),
+       ('栗战书','男','lizhnshu@163.com',2)
+       -->
+    <insert id="insertEmpByForeach">
+            insert into tab1_employee (last_name,gender,email,d_id) values
+            <foreach collection="list" item="item" separator=",">
+                (
+                #{item.name},
+                #{item.gender},
+                #{item.email},
+                #{item.d_id}
+                )
+            </foreach>
+    </insert>
+
+
+
+    <!--在oracle环境下执行批量插入
+        1. begin
+            insert into tab1_employee (id,last_name,email,d_id)values(,,,,);
+            inset into tab1_employee (id,last_name,email,d_id)values(,,,,);
+           end;
+
+      <foreach collection="list" item="item" open="begin" close="end;">
+          insert into tab1_employee (id,last_name,email,d_id)
+          values (#{item.name},#{item.email},#{item.d_id});
+      </foreach>
+        2.第二种方式
+            insert into tab1_employee(id,last_name,email,d_id)
+                select employee_SEQ,nextval,last_nanme,email,d_id from(
+                        select 'test01',test001 from dual
+                        union
+                        select 'test02' ,'test002' from dual
+                        union
+                        ...
+                )
+                insert into tab1_employee(id,last_name,email,d_id)
+        select employee_SEQ,nextval,last_nanme,email,d_id from
+        <foreach collection="list" item="item" open="(" close=")" separator="union">
+            select #{item.name} last_name,#{item.email} email ,#{item.d_id} from dual
+        </foreach>
+
+    -->
+
+</mapper>

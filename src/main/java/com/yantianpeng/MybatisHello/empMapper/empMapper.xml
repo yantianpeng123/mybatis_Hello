@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yantianpeng.MybatisHello.empMapper">
+    <!--
+        namespace:命名空间
+        id:唯一表示
+        resultType:返回值类型
+        #{id}: 表示从传递过来的参数取值。
+    -->
+    <!--
+        根据员工编号查询员工
+    -->
+    <select id="selectemp" resultType="com.yantianpeng.MybatisHello.entity.Employee">
+    select id,last_name as name , gender,email from tab1_employee where id = #{id}
+  </select>
+
+
+
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!--
+    namespace:写上接口的全类名
+-->
+<mapper namespace="com.yantianpeng.Cache.Dao.MybatisCache">
+    <!--
+            配置Ehcache缓存
+    -->
+   <cache type="org.mybatis.caches.ehcache.EhcacheCache">
+
+   </cache>
+    <!--
+        默认开启二级缓存
+        eviction：缓存的回收策略
+             LRU – 最近最少使用的:移除最长时间不被使用的对象。
+             FIFO – 先进先出:按对象进入缓存的顺序来移除它们。
+             SOFT – 软引用:移除基于垃圾回收器状态和软引用规则的对象。
+             WEAK – 弱引用:更积极地移除基于垃圾收集器状态和弱引用规则的对象。
+             默认的是 LRU。
+        type：自定义的缓存的全类名：该类需要实现Cache接口
+
+        blocking=""
+        flushInterval：缓存刷新间隔 默认是不清空缓存单位毫秒
+        readOnly：只读 设置为ture：Mybatis认为所有从缓存中获取的数据的操作都是只读操作，不会修改数据，Mybatis为了加快获取速度，
+                                  直接就会将数据再缓存中引用的交给用户，这样操作是不安全的，但是速度是较快。
+                     设置为false；Mybatis认为获取的数据可能会被修改，Mybatis会利用序列化和反序列化技术克隆一份新的数据
+                                 这样是安全的 但是速度是最慢的。
+        size：缓存多少元素。
+    -->
+
+    <select id="getEmpByidCache" resultType="com.yantianpeng.Cache.entity.EmployeeCache" useCache="true" flushCache="true">
+        select * from tab1_employee
+        <where>
+            and id = #{id}
+        </where>
+    </select>
+</mapper>
